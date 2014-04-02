@@ -2882,17 +2882,6 @@ def _get_timestamp_ms(when):
   return int(ms_since_epoch)
 
 
-def truncate_value(value):
-  """Shorten the given value, preserving dict structure."""
-  if isinstance(value, dict):
-    new_dict = {}
-    for k, v in value.iteritems():
-      new_dict.update([(k, truncate_value(v))])
-    return new_dict
-  else:
-    return str(value)[:100]
-
-
 def _get_internal_status(pipeline_key=None,
                          pipeline_dict=None,
                          slot_dict=None,
@@ -2957,8 +2946,6 @@ def _get_internal_status(pipeline_key=None,
         'Could not find pipeline ID "%s"' % pipeline_key.name())
 
   params = pipeline_record.params
-  root_pipeline_key = \
-      _PipelineRecord.root_pipeline.get_value_for_datastore(pipeline_record)
   default_slot_key = db.Key(params['output_slots']['default'])
   start_barrier_key = db.Key.from_path(
       _BarrierRecord.kind(), _BarrierRecord.START, parent=pipeline_key)
@@ -2993,13 +2980,6 @@ def _get_internal_status(pipeline_key=None,
     'backoffSeconds': pipeline_record.params['backoff_seconds'],
     'backoffFactor': pipeline_record.params['backoff_factor'],
   }
-
-  # Truncate args, kwargs, and outputs to < 1MB each so we
-  # can reasonably return the whole tree of pipelines and their outputs.
-  # Coerce each value to a string to truncate if necessary.
-  output['args'] = [truncate_value(v) for v in output['args']]
-  output['kwargs'] = truncate_value(output['kwargs'])
-  output['outputs'] = truncate_value(output['outputs'])
 
   # Fix the key names in parameters to match JavaScript style.
   for value_dict in itertools.chain(
@@ -3098,9 +3078,8 @@ def _get_internal_slot(slot_key=None,
   if slot_record.status == _SlotRecord.FILLED:
     output['status'] = 'filled'
     output['fillTimeMs'] = _get_timestamp_ms(slot_record.fill_time)
-    output['value'] = truncate_value(slot_record.value)
-    filler_pipeline_key = (
-        _SlotRecord.filler.get_value_for_datastore(slot_record))
+    output['value'] = slot_record.value
+    filler_pipeline_key = slot_record.filler_pipeline_key
   else:
     output['status'] = 'waiting'
 
@@ -3149,14 +3128,18 @@ def get_status_tree(root_pipeline_id):
     queries[model] = model.all().filter(
         'root_pipeline =', root_pipeline_key).run(batch_size=1000)
 
-  found_pipeline_dict = dict(
-      (stage.key(), stage) for stage in queries[_PipelineRecord])
-  found_slot_dict = dict(
-      (slot.key(), slot) for slot in queries[_SlotRecord])
-  found_barrier_dict = dict(
-      (barrier.key(), barrier) for barrier in queries[_BarrierRecord])
-  found_status_dict = dict(
-      (status.key(), status) for status in queries[_StatusRecord])
+  # Avoid hitting both response size limits and memory limits for large
+  # pipelines by truncating pipeline arguments and slot values while we load
+  # them from the datastore. The get_pipeline_values function below allows the
+  # user to manually load them later if necessary.
+  found_pipeline_dict = dict((stage.key(), stage.truncated_copy())
+    for stage in queries[_PipelineRecord])
+  found_slot_dict = dict((slot.key(), slot.truncated_copy())
+    for slot in queries[_SlotRecord])
+  found_barrier_dict = dict((barrier.key(), barrier)
+    for barrier in queries[_BarrierRecord])
+  found_status_dict = dict((status.key(), status)
+    for status in queries[_StatusRecord])
 
   # Breadth-first traversal of _PipelineRecord instances by following
   # _PipelineRecord.fanned_out property values.
