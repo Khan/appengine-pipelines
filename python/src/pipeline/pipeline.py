@@ -432,7 +432,7 @@ class Pipeline(object):
 
   # Internal only.
   _class_path = None  # Set for each class
-  _send_mail = mail.send_mail_to_admins  # For testing
+  _send_mail = staticmethod(mail.send_mail_to_admins)  # For testing
 
   # callback_xg_transaction: Determines whether callbacks are processed within
   # a single entity-group transaction (False), a cross-entity-group
