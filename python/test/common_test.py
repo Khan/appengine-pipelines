@@ -245,11 +245,11 @@ class CommonTest(test_shared.TaskRunningMixin, unittest.TestCase):
     try:
       stage1 = common.EmailToContinue(**mail_kwargs)
       outputs1 = self.run_pipeline(
-          stage1, base_path='/_ah/pipeline', _require_slots_filled=False)
+          stage1, base_path='/_pipeline', _require_slots_filled=False)
 
       stage2 = common.EmailToContinue(**mail_kwargs)
       outputs2 = self.run_pipeline(
-          stage2, base_path='/_ah/pipeline', _require_slots_filled=False)
+          stage2, base_path='/_pipeline', _require_slots_filled=False)
 
       mail_kwargs = mail_kwargs.copy()
       mail_kwargs['approve_html'] = '<h3>Woot approved!</h3>'
@@ -257,11 +257,11 @@ class CommonTest(test_shared.TaskRunningMixin, unittest.TestCase):
 
       stage3 = common.EmailToContinue(**mail_kwargs)
       outputs3 = self.run_pipeline(
-          stage3, base_path='/_ah/pipeline', _require_slots_filled=False)
+          stage3, base_path='/_pipeline', _require_slots_filled=False)
 
       stage4 = common.EmailToContinue(**mail_kwargs)
       outputs4 = self.run_pipeline(
-          stage4, base_path='/_ah/pipeline', _require_slots_filled=False)
+          stage4, base_path='/_pipeline', _require_slots_filled=False)
 
       mail_kwargs = mail_kwargs.copy()
       mail_kwargs['random_token'] = 'banana'
@@ -270,7 +270,7 @@ class CommonTest(test_shared.TaskRunningMixin, unittest.TestCase):
       outputs5 = self.run_pipeline(
           stage5,
           idempotence_key='knownid',
-          base_path='/_ah/pipeline',
+          base_path='/_pipeline',
           _require_slots_filled=False)
     finally:
       common.EmailToContinue._email_message = old_email_message
@@ -307,16 +307,16 @@ class CommonTest(test_shared.TaskRunningMixin, unittest.TestCase):
     message5 = saved[4]
 
     self.assertEquals(
-        '/_ah/pipeline/callback?choice=approve&pipeline_id=knownid&'
+        '/_pipeline/callback?choice=approve&pipeline_id=knownid&'
         'random_token=banana\n'
-        '/_ah/pipeline/callback?choice=disapprove&'
+        '/_pipeline/callback?choice=disapprove&'
         'pipeline_id=knownid&random_token=banana',
         message5.body)
 
     self.assertEquals(
-        '<a href="/_ah/pipeline/callback?choice=approve&amp;'
+        '<a href="/_pipeline/callback?choice=approve&amp;'
         'pipeline_id=knownid&amp;random_token=banana">approve</a>\n'
-        '<a href="/_ah/pipeline/callback?choice=disapprove&amp;'
+        '<a href="/_pipeline/callback?choice=disapprove&amp;'
         'pipeline_id=knownid&amp;random_token=banana">disapprove</a>',
         message5.html)
 
