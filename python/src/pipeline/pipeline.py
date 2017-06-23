@@ -1241,20 +1241,26 @@ def _short_repr(obj):
 
 def _write_json_blob(encoded_value, pipeline_id=None):
   """Writes a JSON encoded value to a Cloud Storage File.
-  
+
   This function will store the blob in a GCS file in the default bucket under
   the appengine_pipeline directory. Optionally using another directory level
   specified by pipeline_id
   Args:
     encoded_value: The encoded JSON string.
-    pipeline_id: A pipeline id to segment files in Cloud Storage, if none, 
+    pipeline_id: A pipeline id to segment files in Cloud Storage, if none,
       the file will be created under appengine_pipeline
 
   Returns:
     The blobstore.BlobKey for the file that was created.
   """
-  
+
   default_bucket = app_identity.get_default_gcs_bucket_name()
+  if default_bucket is None:
+    raise Exception(
+      "No default cloud storage bucket has been set for this application. "
+      "This app was likely created before v1.9.0, please see: "
+      "https://cloud.google.com/appengine/docs/php/googlestorage/setup")
+
   path_components = ['/', default_bucket, "appengine_pipeline"]
   if pipeline_id:
     path_components.append(pipeline_id)
@@ -2010,6 +2016,13 @@ class _PipelineContext(object):
       return
     if pipeline_record.status not in (
         _PipelineRecord.WAITING, _PipelineRecord.RUN):
+
+      # If we're attempting to abort an already aborted pipeline,
+      # we silently advance. #50
+      if (pipeline_record.status == _PipelineRecord.ABORTED and
+            purpose == _BarrierRecord.ABORT):
+        return
+
       logging.error('Pipeline ID "%s" in bad state for purpose "%s": "%s"',
                     pipeline_key.name(), purpose or _BarrierRecord.START,
                     pipeline_record.status)

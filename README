@@ -1,5 +1,5 @@
 Google App Engine Pipeline API
-===========================
+==============================
 
 Official site: https://github.com/GoogleCloudPlatform/appengine-pipelines
 
@@ -9,3 +9,13 @@ workflow reuse, and testability.
 
 A primary use-case of the API is connecting together various
 App Engine MapReduces into a computational pipeline.
+
+
+FOR KA EMPLOYEES:
+-----------------
+
+When making changes to this repository and updating substates,
+make sure to use the `master_with_khan_patches` branch instead
+of the `master` branch; this has important fixes that our code
+relies upon. (The good news is that tests will fail should you
+happen to forget this!)
