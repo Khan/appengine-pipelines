@@ -50,7 +50,8 @@ def _get_task_target():
   # Break circular dependency.
   # pylint: disable=g-import-not-at-top
   import pipeline
-  if pipeline._TEST_MODE:
+  if (pipeline._TEST_MODE or
+        os.environ['SERVER_SOFTWARE'].startswith('Development')):
     return None
 
   # Further protect against test cases that doesn't set env vars
