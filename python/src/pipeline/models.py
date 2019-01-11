@@ -32,8 +32,10 @@ def truncate_value(value):
   """Shorten the given value, preserving dict structure."""
   if isinstance(value, dict):
     return dict((k, truncate_value(v)) for k, v in value.iteritems())
-  else:
+  elif isinstance(value, unicode):
     return value.decode('utf-8', 'replace')[:100]
+  else:
+    return str(value)[:100]
 
 
 class _PipelineRecord(db.Model):
