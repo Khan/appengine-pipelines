@@ -32,8 +32,10 @@ def truncate_value(value):
   """Shorten the given value, preserving dict structure."""
   if isinstance(value, dict):
     return dict((k, truncate_value(v)) for k, v in value.iteritems())
-  elif isinstance(value, unicode):
-    return value.decode('utf-8', 'replace')[:100]
+  elif isinstance(value, basestring):
+    # We can't always coerce unicode to a string via `str`, but we
+    # don't need to.
+    return value[:100]
   else:
     return str(value)[:100]
 
